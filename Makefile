@@ -5,7 +5,7 @@ CFLAGS += -lgcc
 all: server.elf
 
 clean:
-	rm -f *.o *.elf
+	rm -f *.o *.elf program
 
 %.elf: %.c
 	$(CC) $(CFLAGS) $^ -o $@
@@ -13,5 +13,9 @@ clean:
 %.o: %.c %s
 	$(CC) $(CFLAGS) -c $< -o $@
 
-run: server.elf
+strace: server.elf
 	strace ./server.elf
+
+run:
+	gcc -o program server.c
+	./program

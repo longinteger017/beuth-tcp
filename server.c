@@ -4,6 +4,9 @@
  * startet einen TCP Server und akzeptiert auf dem eingestellten Port (default 4030)
  * auf der eingestellten Adresse (standardmaessig 0.0.0.0) TCP-Verbindungen.
  * Von einem Client eingehende Daten werden an alle anderen weiterverteilt.
+ *
+ * Client-Verbindung kann man bsp. mit telnet auf einem weiteren Terminal realisieren:
+ * $ telnet 0.0.0.0 4030
  */
 
 #include <stdint.h>
@@ -34,6 +37,8 @@
 
 int main()
 {
+    uint16_t i=0;
+    uint16_t j=0;
     // ein TCP-Socket oeffnen
     int server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket < 0)
@@ -60,7 +65,7 @@ int main()
         exit(1);
     }
 
-    // als lauschendes Socket markieren
+    // als wartendes Socket markieren
     listen(server_socket, 42);
 
     fcntl(server_socket, F_SETFL, O_NONBLOCK);
@@ -99,7 +104,7 @@ int main()
         FD_SET(server_socket, &file_descriptors);
 
         // auch die Clients zum Satz hinzufuegen
-        for (uint16_t i=0; i<num_clients; i++)
+        for (i=0; i<num_clients; i++)
         {
             // ist das Socket noch offen, ist der Client noch verbunden?
             if (client_socket[i] > 0)
@@ -116,7 +121,7 @@ int main()
             // gibt es Aktivitaet auf dem Server-Socket?
             if (FD_ISSET(server_socket, &file_descriptors))
             {
-                // das muss dan eine Verbindungsanfrage sein
+                // das muss dann eine Verbindungsanfrage sein
                 if (num_clients < MAX_CLIENTS)
                 {
             		int newfd = accept(server_socket, (struct sockaddr*) &remote_address, (socklen_t*) &fromlen);
@@ -143,6 +148,7 @@ int main()
             }
             else
             {
+                uint16_t j=0;
                 // das muss dann ein Daten-Eingang von einem verbundenen Client sein
                 printf("Yay! Ich hab' was bekommen!\n");
 
@@ -150,7 +156,7 @@ int main()
                 memset(buffer, 0, BUFSIZE);
 
                 // herausfinden, welcher Client gesendet hat
-                for (uint16_t i=0; i<num_clients; i++)
+                for (i=0; i<num_clients; i++)
                 {
                     // es war dieser hier
                     if (FD_ISSET(client_socket[i], &file_descriptors))
@@ -164,7 +170,7 @@ int main()
                         printf("Client #%d hat geschrieben: %s\n", client_socket[i], buffer);
 
                         // Empfangene Daten an alle anderen Clients weiterverteilen
-                        for (uint16_t j=0; j<num_clients; j++)
+                        for (j=0; j<num_clients; j++)
                         {
                             // kein Echo
                             if (i != j)
