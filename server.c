@@ -55,16 +55,20 @@ int main()
     /********************************************************************/
     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&iSetOption, sizeof(iSetOption));
 
-    struct sockaddr_in server_address;
+    struct sockaddr_in6 server_address;
     // struct leeren
     bzero(&server_address, sizeof(struct sockaddr_in));
     // struct mit Inhalten fuellen
-    server_address.sin_family = AF_INET6;
-    server_address.sin_addr.s_addr = INADDR_ANY; //inet_addr("127.0.0.1");
-    server_address.sin_port = htons(SERVER_PORT);
+
+    server_address.sin6_family = AF_INET6;
+    server_address.sin6_port = htons(SERVER_PORT);
+    server_address.sin6_addr = in6addr_any;
 
     // binden
-    if (bind(server_socket, (struct sockaddr *) &server_address, sizeof(struct sockaddr_in)) < 0)
+    if (bind(
+      server_socket,
+      (struct sockaddr *) &server_address,
+      sizeof(server_address)) < 0)
     {
         printf("Fatal: Socket zu binden hat nicht geklappt\n");
         exit(1);
