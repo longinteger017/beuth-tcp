@@ -5,8 +5,11 @@
  * auf der eingestellten Adresse (standardmaessig 0.0.0.0) TCP-Verbindungen.
  * Von einem Client eingehende Daten werden an alle anderen weiterverteilt.
  *
+ * TODO: IPv6 realisieren
+ * TODO: DNS (gethostbyname, getaddrinfo)
  * Client-Verbindung kann man bsp. mit telnet auf einem weiteren Terminal realisieren:
- * $ telnet 0.0.0.0 4030
+ * $ telnet localhost 4030
+ *
  */
 
 #include <stdint.h>
@@ -25,13 +28,10 @@
 #include <fcntl.h>
 
 #define SERVER_PORT 4030
-
 // maximale Anzahl gleichzeitig erlaubter TCP-Clients
 #define MAX_CLIENTS 1000
-
 // Groesse des Puffers fuer eingehende Daten
 #define BUFSIZE 100
-
 // Anzahl Sekunden, die select() auf Daten warten soll
 #define TIME_WAIT_FOR_DATA 1
 
@@ -40,7 +40,7 @@ int main()
     uint16_t i=0;
     uint16_t j=0;
     // ein TCP-Socket oeffnen
-    int server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    int server_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket < 0)
     {
         printf("Fatal: Hab' kein Socket bekommen\n");
@@ -48,13 +48,18 @@ int main()
     }
 
     int iSetOption = 1;
+    /********************************************************************/
+    /* The setsockopt() function is used to allow the local address to  */
+    /* be reused when the server is restarted before the required wait  */
+    /* time expires.                                                    */
+    /********************************************************************/
     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&iSetOption, sizeof(iSetOption));
 
     struct sockaddr_in server_address;
     // struct leeren
     bzero(&server_address, sizeof(struct sockaddr_in));
     // struct mit Inhalten fuellen
-    server_address.sin_family = AF_INET;
+    server_address.sin_family = AF_INET6;
     server_address.sin_addr.s_addr = INADDR_ANY; //inet_addr("127.0.0.1");
     server_address.sin_port = htons(SERVER_PORT);
 
@@ -161,13 +166,14 @@ int main()
                     // es war dieser hier
                     if (FD_ISSET(client_socket[i], &file_descriptors))
                     {
+                        // hol den Puffer dieses Clients
                         int n = recvfrom(client_socket[i], buffer, BUFSIZE, 0, (struct sockaddr*) &remote_address, &fromlen);
                         if (n < 0)
                         {
                             printf("Fehler: recvfrom() hat nicht geklappt\n");
                         }
 
-                        printf("Client #%d hat geschrieben: %s\n", client_socket[i], buffer);
+                        printf("Client mit Socket-Deskriptor #%d hat geschrieben: %s\n", client_socket[i], buffer);
 
                         // Empfangene Daten an alle anderen Clients weiterverteilen
                         for (j=0; j<num_clients; j++)
@@ -176,6 +182,7 @@ int main()
                             if (i != j)
                             {
                                 printf("Weiterverteilen an Client %d...\n", client_socket[j]);
+                                // mit sendto kann man an beliebig viele Clients schicken
                                 sendto(client_socket[j], buffer, n, 0, (struct sockaddr *) &remote_address, sizeof(struct sockaddr_in));
                             }
                         }
@@ -185,7 +192,7 @@ int main()
         }
         else
         {
-            printf("Hab' nichts bekommen...\n");
+            printf("warte auf client...\n");
         }
     }
 }
