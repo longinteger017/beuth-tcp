@@ -161,13 +161,14 @@ int main()
                     // es war dieser hier
                     if (FD_ISSET(client_socket[i], &file_descriptors))
                     {
+                        // hol den Puffer dieses Clients
                         int n = recvfrom(client_socket[i], buffer, BUFSIZE, 0, (struct sockaddr*) &remote_address, &fromlen);
                         if (n < 0)
                         {
                             printf("Fehler: recvfrom() hat nicht geklappt\n");
                         }
 
-                        printf("Client #%d hat geschrieben: %s\n", client_socket[i], buffer);
+                        printf("Client mit Socket-Deskriptor #%d hat geschrieben: %s\n", client_socket[i], buffer);
 
                         // Empfangene Daten an alle anderen Clients weiterverteilen
                         for (j=0; j<num_clients; j++)
@@ -176,6 +177,7 @@ int main()
                             if (i != j)
                             {
                                 printf("Weiterverteilen an Client %d...\n", client_socket[j]);
+                                // mit sendto kann man an beliebig viele Clients schicken
                                 sendto(client_socket[j], buffer, n, 0, (struct sockaddr *) &remote_address, sizeof(struct sockaddr_in));
                             }
                         }
@@ -185,7 +187,7 @@ int main()
         }
         else
         {
-            printf("Hab' nichts bekommen...\n");
+            printf("warte auf client...\n");
         }
     }
 }
